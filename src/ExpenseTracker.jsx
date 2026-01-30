@@ -1,25 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { PlusCircle, Trash2, TrendingUp, TrendingDown, Calendar, IndianRupee, Wallet, Home, ShoppingBag, Coffee, Zap, Phone, BookOpen, Heart, Bus, Film, Gift, AlertTriangle, Sparkles, SlidersHorizontal, Info } from 'lucide-react';
-
-const EXPENSES_STORAGE_KEY = 'tn-expenses';
-
-const getStorage = () => {
-  if (typeof window !== 'undefined' && window.storage) {
-    return window.storage;
-  }
-
-  return {
-    async get(key) {
-      return { value: window.localStorage.getItem(key) };
-    },
-    async set(key, value) {
-      window.localStorage.setItem(key, value);
-    },
-    async delete(key) {
-      window.localStorage.removeItem(key);
-    },
-  };
-};
+import { PlusCircle, Trash2, TrendingUp, TrendingDown, Calendar, IndianRupee, Wallet, Home, ShoppingBag, Coffee, Zap, Phone, BookOpen, Heart, Bus, Film, Gift, AlertTriangle, Sparkles, SlidersHorizontal, Info, LogOut } from 'lucide-react';
+import { api } from './services/api';
 
 const formatINR = (value) => `₹${Number(value || 0).toLocaleString('en-IN')}`;
 
@@ -90,13 +71,15 @@ const buildSuggestions = ({ expense, categoryMedian, zScore }) => {
   return Array.from(new Set(suggestions)).slice(0, 4);
 };
 
-const ExpenseTracker = () => {
+const ExpenseTracker = ({ onLogout }) => {
   const [expenses, setExpenses] = useState([]);
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [filter, setFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const [insightsWindowDays, setInsightsWindowDays] = useState(45);
   const [insightsSensitivity, setInsightsSensitivity] = useState(3.5);
@@ -123,67 +106,70 @@ const ExpenseTracker = () => {
 
   const loadExpenses = async () => {
     try {
-      const storage = getStorage();
-      const result = await storage.get(EXPENSES_STORAGE_KEY);
-      if (result && result.value) {
-        setExpenses(JSON.parse(result.value));
-      }
-    } catch {
-      console.log('No previous expenses found');
+      setLoading(true);
+      const data = await api.getExpenses();
+      setExpenses(data.expenses || []);
+      setError('');
+    } catch (err) {
+      setError('Failed to load expenses');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const saveExpenses = async (newExpenses) => {
-    try {
-      const storage = getStorage();
-      await storage.set(EXPENSES_STORAGE_KEY, JSON.stringify(newExpenses));
-    } catch (error) {
-      console.error('Failed to save expenses:', error);
-    }
-  };
-
-  const addExpense = () => {
+  const addExpense = async () => {
     if (!amount || !category) {
       alert('Please fill amount and category!');
       return;
     }
 
-    const newExpense = {
-      id: Date.now(),
-      amount: parseFloat(amount),
-      category,
-      description: description || 'No description',
-      date,
-      timestamp: new Date().toISOString()
-    };
+    try {
+      const newExpense = await api.createExpense({
+        amount: parseFloat(amount),
+        category,
+        description: description || null,
+        date,
+      });
 
-    const updatedExpenses = [newExpense, ...expenses];
-    setExpenses(updatedExpenses);
-    saveExpenses(updatedExpenses);
+      setExpenses([newExpense.expense, ...expenses]);
 
-    // Reset form
-    setAmount('');
-    setCategory('');
-    setDescription('');
-    setDate(new Date().toISOString().split('T')[0]);
+      // Reset form
+      setAmount('');
+      setCategory('');
+      setDescription('');
+      setDate(new Date().toISOString().split('T')[0]);
+    } catch (err) {
+      alert('Failed to add expense: ' + err.message);
+    }
   };
 
-  const deleteExpense = (id) => {
-    const updatedExpenses = expenses.filter(exp => exp.id !== id);
-    setExpenses(updatedExpenses);
-    saveExpenses(updatedExpenses);
+  const deleteExpense = async (id) => {
+    try {
+      await api.deleteExpense(id);
+      setExpenses(expenses.filter(exp => exp.id !== id));
+    } catch (err) {
+      alert('Failed to delete expense: ' + err.message);
+    }
   };
 
   const clearAllData = async () => {
     if (window.confirm('Are you sure you want to delete all expenses? This cannot be undone!')) {
       try {
-        const storage = getStorage();
-        await storage.delete(EXPENSES_STORAGE_KEY);
+        // Delete all expenses one by one
+        await Promise.all(expenses.map(exp => api.deleteExpense(exp.id)));
         setExpenses([]);
       } catch (error) {
+        alert('Failed to clear all expenses');
         console.error('Failed to clear data:', error);
       }
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    onLogout();
   };
 
   // Calculate totals
@@ -296,13 +282,35 @@ const ExpenseTracker = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-2">
-            <IndianRupee className="text-orange-600" size={40} />
-             Expense Tracker
-          </h1>
+          <div className="flex items-center justify-center gap-4">
+            <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-2">
+              <IndianRupee className="text-orange-600" size={40} />
+               Expense Tracker
+            </h1>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+            >
+              <LogOut size={20} />
+              Logout
+            </button>
+          </div>
           <p className="text-gray-600">Track your expenses the smart way!</p>
         </div>
 
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+            <p className="mt-4 text-gray-600">Loading expenses...</p>
+          </div>
+        ) : (
+          <>
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-xl p-6 text-white shadow-lg">
@@ -648,8 +656,10 @@ const ExpenseTracker = () => {
 
         {/* Footer */}
         <div className="text-center mt-8 text-gray-600 text-sm">
-          <p>Made with ❤️ | All expenses saved locally</p>
+          <p>Made with ❤️ | All expenses saved securely</p>
         </div>
+        </>
+        )}
       </div>
     </div>
   );

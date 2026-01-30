@@ -1,16 +1,76 @@
-# React + Vite
+# Expense Tracker - Full Stack Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, full-stack expense tracking application with authentication, built with React, Node.js, Express, Prisma, and SQLite.
 
-Currently, two official plugins are available:
+## 🚀 Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Frontend
+- **React 19** - UI library
+- **Vite 7** - Build tool and dev server
+- **Tailwind CSS 3** - Styling
+- **Lucide React** - Icons
 
-## React Compiler
+### Backend
+- **Node.js** with **Express 4** - REST API
+- **Prisma 6** - ORM
+- **SQLite** - Database
+- **JWT** - Authentication
+- **bcryptjs** - Password hashing
+- **Zod** - Validation
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🎯 Running the Application
 
-## Expanding the ESLint configuration
+### Run both servers together
+```bash
+npm run start:all
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Or run servers separately
+
+**Terminal 1 - Backend:**
+```bash
+npm run server
+```
+
+**Terminal 2 - Frontend:**
+```bash
+npm start
+```
+
+## 🌐 Access the Application
+
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:5174
+
+## 🔐 Features
+
+### Authentication
+- User registration with email and password
+- Secure login with JWT tokens
+- Password hashing with bcryptjs
+- Protected routes
+
+### Expense Management
+- Add expenses with amount, category, description, and date
+- View all expenses in a beautiful UI
+- Delete individual expenses
+- Filter expenses by category
+- Category breakdown visualization
+- Monthly and total expense summaries
+
+### Anomaly Detection
+- Intelligent detection of unusual spending patterns
+- Customizable sensitivity and time window
+- Actionable suggestions for flagged expenses
+
+## 📝 Usage
+
+1. **Sign Up**: Create a new account with your email and password (min 8 characters)
+2. **Login**: Use your credentials to login
+3. **Add Expenses**: Fill in the amount, select a category, add description, and date
+4. **View & Manage**: See all your expenses, filter by category, and delete as needed
+5. **Track Insights**: Monitor anomaly alerts for unusual spending patterns
+
+---
+
+Made with ❤️ using modern web technologies
